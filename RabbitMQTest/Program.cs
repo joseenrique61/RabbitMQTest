@@ -1,18 +1,15 @@
-﻿using RabbitMQTest.Infrastructure.RabbitMQ;
+﻿using Microsoft.Extensions.Hosting;
 
 namespace RabbitMQTest;
 
 class Program
 {
-    async static void Main(string[] args)
+    static async Task Main(string[] args)
     {
-        var connection = RabbitMQConnection.Instance;
-
-        await connection.Init();
-
-        var channel = connection.Channel;
+        var builder = Host.CreateApplicationBuilder();
 
 
 
+        using var host = builder.Build();
     }
 }
