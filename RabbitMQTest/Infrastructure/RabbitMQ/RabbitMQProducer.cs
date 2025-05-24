@@ -11,7 +11,6 @@ public class RabbitMQProducer
     {
         var connection = await RabbitMQConnection.Instance!.Init();
 
-
         await connection.Channel!.BasicPublishAsync(
             exchange: string.Empty,
             routingKey: alertMessage.Binding,

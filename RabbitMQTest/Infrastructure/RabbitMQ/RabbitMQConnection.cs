@@ -13,13 +13,17 @@ internal class RabbitMQConnection
 
     private RabbitMQConnection() { }
 
-    public async Task Init()
+    public async Task<RabbitMQConnection> Init()
     {
         if (Instance == null)
         {
             Instance = new RabbitMQConnection();
             await CreateConnection();
-        }        
+
+            return Instance;
+        }      
+        
+        return Instance;
     }
 
     private async Task CreateConnection()
