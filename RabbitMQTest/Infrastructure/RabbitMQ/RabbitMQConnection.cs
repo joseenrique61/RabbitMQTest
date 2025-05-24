@@ -15,13 +15,11 @@ internal class RabbitMQConnection
 
     public async Task Init()
     {
-        if (Instance != null)
+        if (Instance == null)
         {
-            throw new Exception("The connection already exists.");
-        }
-
-        Instance = new RabbitMQConnection();
-        await CreateConnection();
+            Instance = new RabbitMQConnection();
+            await CreateConnection();
+        }        
     }
 
     private async Task CreateConnection()
