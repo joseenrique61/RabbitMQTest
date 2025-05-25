@@ -1,39 +1,28 @@
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using RabbitMQTest.Infrastructure.QueueManager.Interfaces;
 
 namespace RabbitMQTest.Infrastructure.QueueManager.RabbitMQ;
 
-internal class RabbitMQConnection
+internal class RabbitMQConnection(IOptions<RabbitMQConfiguration> options) : IQueueConnection
 {
-    public static RabbitMQConnection? Instance { get; private set; }
-
-    private readonly IConfiguration _configuration = new ConfigurationManager();
-
+    private readonly RabbitMQConfiguration _configuration = options.Value;
     public IChannel? Channel { get; private set; }
 
-    private RabbitMQConnection() { }
-
-    public async Task<RabbitMQConnection> Init()
+    public async Task InitializeAsync()
     {
-        if (Instance == null)
-        {
-            Instance = new RabbitMQConnection();
-            await CreateConnection();
-
-            return Instance;
-        }      
-        
-        return Instance;
+        await CreateConnection();
     }
 
     private async Task CreateConnection()
     {
         var factory = new ConnectionFactory()
         {
-            HostName = _configuration["RabbitMQ:Hostname"]!,
-            Port = int.Parse(_configuration["RabbitMQ:Port"]!),
-            UserName = _configuration["RabbitMQ:Username"]!,
-            Password = _configuration["RabbitMQ:Password"]!
+            HostName = _configuration.HostName,
+            Port = _configuration.Port,
+            VirtualHost = _configuration.VirtualHost,
+            UserName = _configuration.Username,
+            Password = _configuration.Password
         };
         var connection = await factory.CreateConnectionAsync();
         Channel = await connection.CreateChannelAsync();

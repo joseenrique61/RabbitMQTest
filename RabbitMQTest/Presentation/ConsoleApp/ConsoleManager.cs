@@ -1,11 +1,12 @@
+using RabbitMQTest.Domain;
 using RabbitMQTest.Domain.Shop;
+using RabbitMQTest.Infrastructure.QueueManager.Interfaces;
+using RabbitMQTest.Infrastructure.QueueManager.Interfaces.Consumers;
 
 namespace RabbitMQTest.Presentation.ConsoleApp;
 
-public class ConsoleManager(IShop shop)
+public class ConsoleManager(IShop shop, IProducer producer, IDatabaseConsumer databaseConsumer, INotificationConsumer notificationConsumer, ILoggerConsumer loggerConsumer)
 {
-    private IShop _shop = shop;
-
     private static async Task SelectOption(List<Option> options)
     {
         while (true)
@@ -48,9 +49,14 @@ public class ConsoleManager(IShop shop)
     private async Task BuyProduct()
     {
         List<Option> options = [];
-        foreach (var product in _shop.Products)
+        foreach (var product in shop.Products)
         {
-            options.Add(new(product.Name, ));
+            options.Add(new Option(product.Name, async () =>
+            {
+                Console.WriteLine($"Thanks for buying {product.Name}!");
+                await producer.SendProductAlert(new ProductMessage(product.Id), "dev.topic", "client.purchase");
+                await producer.SendProductAlert(new ProductMessage(product.Id), "dev.direct", "database");
+            }));
         }
         await SelectOption(options);
     }
