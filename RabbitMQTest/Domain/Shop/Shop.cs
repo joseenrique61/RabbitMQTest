@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using RabbitMQTest.Domain.Models;
 
-namespace RabbitMQTest
+namespace RabbitMQTest.Domain.Shop
 {
-    internal class Shop
+    internal class Shop : IShop
     {
-        private List<Product> products = new List<Product>();
-        private int nextId = 1;
+        public List<Product> Products { get; } = [];
 
         public Shop()
         {
@@ -21,22 +16,20 @@ namespace RabbitMQTest
 
         public void AddProduct(string nombre, float precio)
         {
-            products.Add(new Product(nextId++, nombre, precio));
+            Products.Add(new Product(Products.Count + 1, nombre, precio));
         }
 
         public bool DeleteProduct(int id)
         {
-            var product = products.FirstOrDefault(p => p.Id == id);
+            var product = Products.FirstOrDefault(p => p.Id == id);
             if (product != null)
             {
-                products.Remove(product);
+                Products.Remove(product);
                 return true;
             }
             return false;
         }
 
-        public List<Product> GetProducts() => products;
-
-        public Product? GetProductsByID(int id) => products.FirstOrDefault(p => p.Id == id);
+        public Product? GetProductByID(int id) => Products.FirstOrDefault(p => p.Id == id);
     }
 }

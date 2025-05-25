@@ -1,10 +1,8 @@
-using Microsoft.VisualBasic;
+using System.Text;
 using RabbitMQ.Client;
 using RabbitMQTest.Domain;
-using System.Text;
-using System.Threading.Channels;
 
-namespace RabbitMQTest.Infrastructure.RabbitMQ;
+namespace RabbitMQTest.Infrastructure.QueueManager.RabbitMQ;
 
 public class RabbitMQProducer
 {

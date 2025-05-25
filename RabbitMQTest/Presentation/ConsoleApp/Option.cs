@@ -1,6 +1,3 @@
 namespace RabbitMQTest.Presentation.ConsoleApp;
 
-public class Option
-{
-    
-}
+public record Option(string Text, Func<Task> Action);

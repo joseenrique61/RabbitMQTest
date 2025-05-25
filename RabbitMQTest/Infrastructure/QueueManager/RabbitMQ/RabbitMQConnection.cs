@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using RabbitMQ.Client;
 
-namespace RabbitMQTest.Infrastructure.RabbitMQ;
+namespace RabbitMQTest.Infrastructure.QueueManager.RabbitMQ;
 
 internal class RabbitMQConnection
 {
