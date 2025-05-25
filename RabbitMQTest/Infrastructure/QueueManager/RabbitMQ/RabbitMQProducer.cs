@@ -15,7 +15,7 @@ public class RabbitMQProducer
         await connection.Channel!.BasicPublishAsync(
             exchange: string.Empty,
             routingKey: productMessage.routingKey,
-            body: Encoding.UTF8.GetBytes(new StringBuilder().Append(productMessage.name).Append(productMessage.price).ToString())
+            body: Encoding.UTF8.GetBytes(new StringBuilder().Append(productMessage.id.ToString()).Append(productMessage.name).Append(productMessage.price).ToString())
             );
 
         Console.WriteLine($" [x] Sent");
