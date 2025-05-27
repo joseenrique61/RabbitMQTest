@@ -1,15 +1,18 @@
 ﻿using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQTest.Domain;
+using RabbitMQTest.Domain.Shop;
 using RabbitMQTest.Infrastructure.QueueManager.Interfaces.Consumers;
 
 namespace RabbitMQTest.Infrastructure.QueueManager.RabbitMQ.Consumers
 {
-    public class RabbitMQNotificationConsumer(IServiceProvider serviceProvider, ILogger<RabbitMQNotificationConsumer> logger) : BackgroundService, IDatabaseConsumer
+    public class RabbitMQNotificationConsumer(IServiceProvider serviceProvider, ILogger<RabbitMQNotificationConsumer> logger, IShop shop) : BackgroundService, IDatabaseConsumer
     {
         public string QueueName => "dev.notifications";
 
@@ -25,6 +28,19 @@ namespace RabbitMQTest.Infrastructure.QueueManager.RabbitMQ.Consumers
                 var message = Encoding.UTF8.GetString(body);
 
                 logger.LogInformation("Received {message} in notifications", message);
+
+                try
+                {
+                    var productMessage = JsonSerializer.Deserialize<ProductMessage>(message)!;
+                    var product = shop.Products.First(x => x.Id == productMessage.Id);
+                    Console.WriteLine($"[x] Notification: your order for '{product.Name}' was processed");
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e.Message);
+                    await Task.FromException(e);
+                    return;
+                }
 
                 await Task.CompletedTask;
             };
