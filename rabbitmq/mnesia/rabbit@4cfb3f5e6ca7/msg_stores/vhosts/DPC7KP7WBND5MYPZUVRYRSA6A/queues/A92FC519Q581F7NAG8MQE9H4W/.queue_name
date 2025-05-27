@@ -1,0 +1,2 @@
+VHOST: dev
+QUEUE: dev.logger
