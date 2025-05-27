@@ -1,13 +1,13 @@
+using Microsoft.Extensions.Hosting;
 using RabbitMQTest.Domain;
 using RabbitMQTest.Domain.Shop;
 using RabbitMQTest.Infrastructure.QueueManager.Interfaces;
-using RabbitMQTest.Infrastructure.QueueManager.Interfaces.Consumers;
 
 namespace RabbitMQTest.Presentation.ConsoleApp;
 
-public class ConsoleManager(IShop shop, IProducer producer, IDatabaseConsumer databaseConsumer, INotificationConsumer notificationConsumer, ILoggerConsumer loggerConsumer)
+public class ConsoleManager(IHostApplicationLifetime host, IShop shop, IProducer producer) : IHostedService
 {
-    private static async Task SelectOption(List<Option> options)
+    private static async Task SelectOption(List<Option> options, bool addBackOption = true)
     {
         while (true)
         {
@@ -16,18 +16,24 @@ public class ConsoleManager(IShop shop, IProducer producer, IDatabaseConsumer da
             {
                 Console.WriteLine($"{i + 1}. {options[i].Text}");
             }
-            Console.WriteLine($"{options.Count + 1}. Back");
+            if (addBackOption) Console.WriteLine($"{options.Count + 1}. Back");
 
             try
             {
                 var option = int.Parse(Console.ReadLine()!);
-                if (option is <= 0 or > 3)
+                if (option <= 0 || option > options.Count + (addBackOption ? 1 : 0))
                 {
                     throw new Exception();
                 }
 
-                if (option == options.Count + 1)
+                if (option == options.Count + 1 && addBackOption)
                 {
+                    return;
+                }
+
+                if (option == options.Count && !addBackOption)
+                {
+                    await options[option - 1].Action.Invoke();
                     return;
                 }
 
@@ -40,10 +46,16 @@ public class ConsoleManager(IShop shop, IProducer producer, IDatabaseConsumer da
         }
     }
 
-    public async Task RunAsync()
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
-        List<Option> options = [new("Buy product", BuyProduct)];
-        await SelectOption(options);
+        List<Option> options = [
+            new("Buy product", BuyProduct),
+            new("Exit", async () =>
+            {
+                host.StopApplication();
+            })
+        ];
+        await SelectOption(options, addBackOption: false);
     }
 
     private async Task BuyProduct()
@@ -59,5 +71,10 @@ public class ConsoleManager(IShop shop, IProducer producer, IDatabaseConsumer da
             }));
         }
         await SelectOption(options);
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
     }
 }

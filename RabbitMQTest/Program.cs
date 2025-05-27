@@ -1,12 +1,13 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using RabbitMQTest.Domain.Shop;
 using RabbitMQTest.Infrastructure.QueueManager.Interfaces;
-using RabbitMQTest.Infrastructure.QueueManager.Interfaces.Consumers;
 using RabbitMQTest.Infrastructure.QueueManager.RabbitMQ;
 using RabbitMQTest.Infrastructure.QueueManager.RabbitMQ.Consumers;
 using RabbitMQTest.Presentation.ConsoleApp;
+using Serilog;
 
 namespace RabbitMQTest;
 
@@ -16,25 +17,29 @@ class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
 
+        builder.Services.AddSerilog((_, configuration) =>
+        {
+            configuration.WriteTo.File("logs/logs.txt", outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:l}{NewLine}");
+        });
+
         builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
         builder.Services.Configure<RabbitMQConfiguration>(
             builder.Configuration.GetSection("RabbitMQ"));
 
-        builder.Services.AddScoped<IShop, Shop>();
+        builder.Logging.AddConsole();
 
-        builder.Services.AddSingleton<IQueueConnection, RabbitMQConnection>();
+        builder.Services.AddScoped<IShop, Shop>();
 
         builder.Services.AddScoped<IProducer, RabbitMQProducer>();
 
-        builder.Services.AddScoped<IDatabaseConsumer, RabbitMQDatabaseConsumer>();
-        builder.Services.AddScoped<INotificationConsumer, RabbitMQNotificationConsumer>();
-        builder.Services.AddScoped<ILoggerConsumer, RabbitMQLoggerConsumer>();
+        builder.Services.AddHostedService<RabbitMQDatabaseConsumer>();
+        builder.Services.AddHostedService<RabbitMQNotificationConsumer>();
+        builder.Services.AddHostedService<RabbitMQLoggerConsumer>();
 
-        builder.Services.AddSingleton<ConsoleManager>();
+        builder.Services.AddHostedService<ConsoleManager>();
 
         using var app = builder.Build();
 
-        await app.Services.GetRequiredService<IQueueConnection>().InitializeAsync();
-        await app.Services.GetRequiredService<ConsoleManager>().RunAsync();
+        await app.RunAsync();
     }
 }

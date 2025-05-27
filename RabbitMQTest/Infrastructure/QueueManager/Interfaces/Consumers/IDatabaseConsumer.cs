@@ -1,6 +1,4 @@
-using RabbitMQTest.Infrastructure.QueueManager.Interfaces.Consumers;
-
-namespace RabbitMQTest.Infrastructure.QueueManager.Interfaces;
+namespace RabbitMQTest.Infrastructure.QueueManager.Interfaces.Consumers;
 
 public interface IDatabaseConsumer : IConsumer
 {
