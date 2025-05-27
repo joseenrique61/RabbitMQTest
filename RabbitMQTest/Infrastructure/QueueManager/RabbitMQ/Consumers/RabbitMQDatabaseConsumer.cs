@@ -1,15 +1,18 @@
 ﻿using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQTest.Domain;
+using RabbitMQTest.Domain.Shop;
 using RabbitMQTest.Infrastructure.QueueManager.Interfaces.Consumers;
 
 namespace RabbitMQTest.Infrastructure.QueueManager.RabbitMQ.Consumers
 {
-    public class RabbitMQDatabaseConsumer(IServiceProvider serviceProvider, ILogger<RabbitMQDatabaseConsumer> logger) : BackgroundService, IDatabaseConsumer
+    public class RabbitMQDatabaseConsumer(IServiceProvider serviceProvider, ILogger<RabbitMQDatabaseConsumer> logger, IShop shop) : BackgroundService, IDatabaseConsumer
     {
         public string QueueName => "dev.purchases";
 
@@ -25,6 +28,20 @@ namespace RabbitMQTest.Infrastructure.QueueManager.RabbitMQ.Consumers
                 var message = Encoding.UTF8.GetString(body);
 
                 logger.LogInformation("Received {message} in database", message);
+
+                try
+                {
+                    Directory.CreateDirectory("db");
+                    var productMessage = JsonSerializer.Deserialize<ProductMessage>(message)!;
+                    var product = shop.Products.First(x => x.Id == productMessage.Id);
+                    await File.AppendAllTextAsync("db/db.txt", JsonSerializer.Serialize(product) + "\n", stoppingToken);
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e.Message);
+                    await Task.FromException(e);
+                    return;
+                }
 
                 await Task.CompletedTask;
             };
