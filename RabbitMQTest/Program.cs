@@ -6,6 +6,8 @@ using RabbitMQTest.Domain.Shop;
 using RabbitMQTest.Infrastructure.QueueManager.Interfaces;
 using RabbitMQTest.Infrastructure.QueueManager.RabbitMQ;
 using RabbitMQTest.Infrastructure.QueueManager.RabbitMQ.Consumers;
+using RabbitMQTest.Infrastructure.ServiceBus.AzureServiceBus;
+using RabbitMQTest.Infrastructure.ServiceBus.AzureServiceBus.Interfaces;
 using RabbitMQTest.Presentation.ConsoleApp;
 using Serilog;
 
@@ -25,16 +27,23 @@ class Program
         builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
         builder.Services.Configure<RabbitMQConfiguration>(
             builder.Configuration.GetSection("RabbitMQ"));
+        builder.Services.Configure<AzureConfiguration>(
+            builder.Configuration.GetSection("AzureServiceBus"));
 
         builder.Logging.AddConsole();
 
         builder.Services.AddScoped<IShop, Shop>();
 
-        builder.Services.AddScoped<IProducer, RabbitMQProducer>();
+        // builder.Services.AddScoped<IProducer, RabbitMQProducer>();
+        builder.Services.AddScoped<IProducer, AzureProducer>();
 
-        builder.Services.AddHostedService<RabbitMQDatabaseConsumer>();
-        builder.Services.AddHostedService<RabbitMQNotificationConsumer>();
-        builder.Services.AddHostedService<RabbitMQLoggerConsumer>();
+        builder.Services.AddSingleton<IServiceBusConnectionProducer, AzureConnectionProducer>();
+        builder.Services.AddSingleton<IServiceBusConnectionConsumer, AzureConnectionConsumer>();
+        builder.Services.AddHostedService<AzureDatabaseConsumer>();
+
+        // builder.Services.AddHostedService<RabbitMQDatabaseConsumer>();
+        // builder.Services.AddHostedService<RabbitMQNotificationConsumer>();
+        // builder.Services.AddHostedService<RabbitMQLoggerConsumer>();
 
         builder.Services.AddHostedService<ConsoleManager>();
 
