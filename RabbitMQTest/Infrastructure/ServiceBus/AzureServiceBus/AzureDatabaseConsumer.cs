@@ -13,14 +13,16 @@ public class AzureDatabaseConsumer(ILogger<AzureDatabaseConsumer> logger, IServi
 {
     public string QueueName => "purchases";
 
+    private ServiceBusProcessor? _busProcessor;
+
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var processor = serviceBusConnectionConsumer.ServiceBusClient.CreateProcessor(QueueName, new ServiceBusProcessorOptions());
+        _busProcessor = serviceBusConnectionConsumer.ServiceBusClient.CreateProcessor(QueueName, new ServiceBusProcessorOptions());
 
         try
         {
-            processor.ProcessMessageAsync += async (args) =>
+            _busProcessor.ProcessMessageAsync += async (args) =>
             {
                 var body = args.Message.Body.ToString();
                 var productMessage = JsonSerializer.Deserialize<ProductMessage>(body)!;
@@ -32,25 +34,26 @@ public class AzureDatabaseConsumer(ILogger<AzureDatabaseConsumer> logger, IServi
                 await args.CompleteMessageAsync(args.Message, stoppingToken);
             };
 
-            processor.ProcessErrorAsync += (args) =>
+            _busProcessor.ProcessErrorAsync += (args) =>
             {
                 logger.LogError(args.Exception.ToString());
                 return Task.CompletedTask;
             };
 
-            await processor.StartProcessingAsync(stoppingToken);
+            await _busProcessor.StartProcessingAsync(stoppingToken);
 
-            // await Task.Delay(60000, stoppingToken);
-            //
-            // await processor.StopProcessingAsync(stoppingToken);
         }
         catch (Exception e)
         {
             logger.LogError(e.Message);
         }
-        // finally
-        // {
-        //     await processor.DisposeAsync();
-        // }
+    }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await _busProcessor!.StopProcessingAsync(cancellationToken);
+        await _busProcessor.DisposeAsync();
+
+        await serviceBusConnectionConsumer.ServiceBusClient.DisposeAsync();
     }
 }
