@@ -20,7 +20,7 @@ Azure Service Bus was configured through the [Azure Portal](https://portal.azure
 There is one queue configured for the app: *_purchases_*. This queue is in charge of managing the purchases made by the customer.
 
 #### Shared Access Policies
-There are two shared access policies, one for listening to the queue, _ListenPruchasesEvents_, and another for sending messages to it, _SendPurchasesEvents_.
+There are two shared access policies, one for listening to the queue, _ListenPruchaseEvents_, and another for sending messages to it, _SendPurchasesEvents_.
 
 ### App
 Configuration of the app is made through a file called `appsettings.json`. It follows the format of:
