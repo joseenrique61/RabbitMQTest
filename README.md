@@ -1,12 +1,6 @@
 # RabbitMQTest
-RabbitMQTest is our project for testing RabbitMQ, a queue manager, with a real use case.
+RabbitMQTest is our project for testing RabbitMQ, in this case adapted to Azure, with a real use case.
 The use case we chose is _buying a product online_.
-
-# Running the container
-To run the container, use the following command:
-```
-sudo docker run -d -it --name rabbitmq --hostname 4cfb3f5e6ca7 -p 5672:5672 -p 15672:15672 -v route_to_rabbitmq_volume:/var/lib/rabbitmq rabbitmq:3.12-management
-```
 
 # Explanation
 ## Logging
@@ -19,25 +13,14 @@ The logging is made with Serilog, with the packages:
 All logging is written to a file called logs/log.txt
 
 ## Configuration
-### RabbitMQ
-RabbitMQ is deployed with docker. The version used is 3.12-management. The package used for connecting with the app is [RabbitMQ.Client](https://www.nuget.org/packages/RabbitMQ.Client/7.1.2).
-
-#### Users
-There are two users created: guest (default) and normal_user, that only has access to the virtual host _dev_.
-
-#### Virtual hosts
-There are two virtual hosts created: / (default) and dev, the one used for this project.
-
-#### Exchanges
-- amq.*: Default exchanges
-- dev.direct: Exchange of type direct
-- dev.fanout: Exchange of type fanout
-- dev.topic: Exchange of type topic
+### Azure Service Bus
+Azure Service Bus was configured through the [Azure Portal](https://portal.azure.com/#home).
 
 #### Queues
-- dev.logger: is binded to dev.topic with routing key '*.purchase'
-- dev.notifications: is binded to dev.topic with routing key '*.purchase', and dev.direct with routing key 'notifications'
-- dev.purchases: is binded to dev.direct with routing key 'database'
+There is one queue configured for the app: *_purchases_*. This queue is in charge of managing the purchases made by the customer.
+
+#### Shared Access Policies
+There are two shared access policies, one for listening to the queue, _ListenPruchasesEvents_, and another for sending messages to it, _SendPurchasesEvents_.
 
 ### App
 Configuration of the app is made through a file called `appsettings.json`. It follows the format of:
@@ -56,10 +39,14 @@ Configuration of the app is made through a file called `appsettings.json`. It fo
         "VirtualHost": "",
         "Username": "",
         "Password": ""
+    },
+    "AzureServiceBus": {
+        "ConnectionStringProducer": "",
+        "ConnectionStringConsumer": ""
     }
 }
 ```
-In the repository there is a file called appsettings-example.json which has this format for editing.
+In the repository there is a file called _appsettings-example.json_ which has this format for editing.
 
 ## How does the app work?
 We used .NET Core 9 for the project. It is a CLI application.
@@ -69,19 +56,17 @@ This is done through a package called [Microsoft.Extensions.Hosting](https://www
 This is an official package from Microsoft, which provides the tools for managing dependencies, logging and configuration.
 
 ### CLI
-The console is managed through a service called ConsoleManager. It calls the producer through an interface to send messages to RabbitMQ.
+The console is managed through a service called ConsoleManager. It calls the producer through an interface to send messages to the Azure Service Bus.
+
+### Connection
+There are two classes that manage connections to the Service Bus. There is one for the producer, _AzureConnectionProducer_, and other for the consumer, _AzureConnectionConsumer_. This is done so each one has their own connection string.
 
 ### Producer
-The producer is a dependency injected into the ConsoleManager. It has a method for sending messages to RabbitMQ, in which you can specify the message, exchange and routing key for the message. It creates a connection and a channel with the specified information in the configuration.
-
-### Consumers
-Consumers, as the producer, create a connection and a channel with the specified information in the configuration. One connection is created per producer or consumer, as it is not recommendable to use the same for all in an asynchronous environment.
+The producer is a dependency injected into the ConsoleManager. It has a method for sending messages to Azure Service Bus, in which you can specify the message and queue for the message. It uses the connection provided by the AzureConnectionProducer.
 
 #### Database consumer
-The database consumer is subscribed to the dev.purchases queue. It logs that it received a message and writes to a file called db/db.txt the product received.
+The database consumer is a service that works on the background, so that it doesn't block the main thread waiting for the messages.
 
-#### Notification consumer
-The notification consumer is subscribed to the dev.notifications queue. It logs that it received a message and writes to the console a message that a order was processed.
+It is subscribed to the purchases queue. It uses the connection provided by AzureConnectionConsumer and opens a processor (an object that reads the messages from the queue) and closes it when the service is shut down. 
 
-#### Logger consumer
-The logger consumer is subscribed to the dev.notifications queue. It logs that it received a message.
+It logs that it received a message and writes to a file called db/db.txt the product received.
