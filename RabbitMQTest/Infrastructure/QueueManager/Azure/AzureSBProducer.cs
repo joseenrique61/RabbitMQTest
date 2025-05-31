@@ -23,12 +23,12 @@ namespace RabbitMQTest.Infrastructure.QueueManager.Azure
             {
                 var connection = new AzureSBConnection(serviceProvider.GetRequiredService<IOptions<AzureSBConfiguration>>());
 
-                connection.Initialize();
+                connection.InitializeAsync();
 
-                await using var client = new ServiceBusClient(connection.ConnectionString);
+                await using var client = new ServiceBusClient(connection.ProducerConnectionString);
 
                 connection.Sender = client.CreateSender(connection.QueueName);
-                connection.Message = new ServiceBusMessage(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(productMessage)));
+                connection.Message = new ServiceBusMessage(JsonSerializer.Serialize(productMessage));
 
                 await connection.Sender.SendMessageAsync(connection.Message);
                 

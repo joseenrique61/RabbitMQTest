@@ -72,7 +72,6 @@ public class ConsoleManager(IHostApplicationLifetime host, IShop shop, IProducer
         }
         await SelectOption(options);
     }
-
     public Task StopAsync(CancellationToken cancellationToken)
     {
         return Task.CompletedTask;

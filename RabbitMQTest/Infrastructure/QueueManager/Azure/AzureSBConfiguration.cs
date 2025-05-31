@@ -8,7 +8,8 @@ namespace RabbitMQTest.Infrastructure.QueueManager.Azure
 {
     public class AzureSBConfiguration
     {
-        public string ConnectionString { get; set; }
+        public string ProducerConnectionString { get; set; }
+        public string ReceiverConnectionString { get; set; }
         public string QueueName { get; set; }
     }
 }
