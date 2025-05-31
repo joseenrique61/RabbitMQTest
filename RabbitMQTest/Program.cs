@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RabbitMQTest.Domain.Shop;
+using RabbitMQTest.Infrastructure.QueueManager.Azure;
 using RabbitMQTest.Infrastructure.QueueManager.Interfaces;
 using RabbitMQTest.Infrastructure.QueueManager.RabbitMQ;
 using RabbitMQTest.Infrastructure.QueueManager.RabbitMQ.Consumers;
@@ -23,18 +24,22 @@ class Program
         });
 
         builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-        builder.Services.Configure<RabbitMQConfiguration>(
-            builder.Configuration.GetSection("RabbitMQ"));
+        
+        //builder.Services.Configure<RabbitMQConfiguration>(
+        //    builder.Configuration.GetSection("RabbitMQ"));
+        builder.Services.Configure<AzureSBConfiguration>(
+            builder.Configuration.GetSection("Azure"));
 
         builder.Logging.AddConsole();
 
         builder.Services.AddScoped<IShop, Shop>();
 
-        builder.Services.AddScoped<IProducer, RabbitMQProducer>();
+        //builder.Services.AddScoped<IProducer, RabbitMQProducer>();
+        builder.Services.AddScoped<IProducer, AzureSBProducer>();
 
-        builder.Services.AddHostedService<RabbitMQDatabaseConsumer>();
-        builder.Services.AddHostedService<RabbitMQNotificationConsumer>();
-        builder.Services.AddHostedService<RabbitMQLoggerConsumer>();
+        //builder.Services.AddHostedService<RabbitMQDatabaseConsumer>();
+        //builder.Services.AddHostedService<RabbitMQNotificationConsumer>();
+        //builder.Services.AddHostedService<RabbitMQLoggerConsumer>();
 
         builder.Services.AddHostedService<ConsoleManager>();
 
